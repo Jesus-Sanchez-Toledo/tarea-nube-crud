@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HorrorVault CRUD</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #0f0f11; color: #f0f0f0; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: #19191c; padding: 20px; border-radius: 8px; border: 1px solid #b19cd9; }
+        h1 { color: #d90077; text-align: center; }
+        input { width: 95%; padding: 10px; margin: 5px 0; background: #222; border: 1px solid #555; color: white; }
+        button { padding: 10px 15px; background: #d90077; color: white; border: none; cursor: pointer; border-radius: 4px; }
+        button:hover { background: #b19cd9; color: black; }
+        .movie-item { background: #222; padding: 15px; margin-top: 10px; border-radius: 5px; display: flex; justify-content: space-between; }
+        .actions button { margin-left: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>HorrorVault - Gestión de Películas</h1>
+        
+        <div id="form-container">
+            <h3 id="form-title">Agregar Registro</h3>
+            <input type="hidden" id="movieId">
+            <input type="text" id="title" placeholder="Título de la película" required>
+            <input type="text" id="director" placeholder="Director" required>
+            <input type="number" id="year" placeholder="Año" required>
+            <button onclick="saveMovie()">Guardar Película</button>
+            <button onclick="clearForm()" style="background:#555;">Cancelar</button>
+        </div>
+
+        <h3>Catálogo (Todos los registros)</h3>
+        <div id="movie-list"></div>
+    </div>
+
+    <script>
+        const API_URL = '/api/movies';
+
+        // 1. CONSULTAR TODOS
+        async function loadMovies() {
+            const res = await fetch(API_URL);
+            const movies = await res.json();
+            const list = document.getElementById('movie-list');
+            list.innerHTML = '';
+            movies.forEach(m => {
+                list.innerHTML += `
+                    <div class="movie-item">
+                        <div>
+                            <strong>${m.title}</strong> (${m.year}) - Dir: ${m.director}
+                        </div>
+                        <div class="actions">
+                            <button onclick="viewMovie(${m.id})" style="background:#007BFF;">Ver Detalle</button>
+                            <button onclick="editMovie(${m.id}, '${m.title}', '${m.director}', ${m.year})">Editar</button>
+                            <button onclick="deleteMovie(${m.id})">Eliminar</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // 2. CONSULTAR INDIVIDUAL
+        async function viewMovie(id) {
+            const res = await fetch(`${API_URL}/${id}`);
+            const m = await res.json();
+            alert(`DETALLE INDIVIDUAL:\nTítulo: ${m.title}\nDirector: ${m.director}\nAño: ${m.year}\nID Registro: ${m.id}`);
+        }
+
+        // 3 y 4. AGREGAR O EDITAR
+        async function saveMovie() {
+            const id = document.getElementById('movieId').value;
+            const data = {
+                title: document.getElementById('title').value,
+                director: document.getElementById('director').value,
+                year: document.getElementById('year').value
+            };
+
+            if (id) {
+                await fetch(`${API_URL}/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+            } else {
+                await fetch(API_URL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+            }
+            clearForm();
+            loadMovies();
+        }
+
+        function editMovie(id, title, director, year) {
+            document.getElementById('form-title').innerText = "Editar Registro";
+            document.getElementById('movieId').value = id;
+            document.getElementById('title').value = title;
+            document.getElementById('director').value = director;
+            document.getElementById('year').value = year;
+        }
+
+        // 5. ELIMINAR
+        async function deleteMovie(id) {
+            if(confirm("¿Seguro que deseas eliminar esta película?")) {
+                await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+                loadMovies();
+            }
+        }
+
+        function clearForm() {
+            document.getElementById('form-title').innerText = "Agregar Registro";
+            document.getElementById('movieId').value = "";
+            document.getElementById('title').value = "";
+            document.getElementById('director').value = "";
+            document.getElementById('year').value = "";
+        }
+
+        // Cargar al iniciar
+        loadMovies();
+    </script>
+</body>
+</html>
